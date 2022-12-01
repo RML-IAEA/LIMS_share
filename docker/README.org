@@ -1,0 +1,123 @@
+#+TITLE: SENAITE Docker Documentation
+#+AUTHOR: RIDING BYTES GmbH 
+#+EMAIL: rb@ridingbytes.com
+#+DATE: 2022-06-06
+#+MODIFIED BY: Niall Murphy (IAEA)
+#+SETUPFILE: https://fniessen.github.io/org-html-themes/org/theme-readtheorg.setup
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS: [a4paper,11pt]
+#+LATEX_HEADER: \usepackage[left=2cm, right=1.5cm, top=2cm, bottom=1cm]{geometry}
+#+LATEX_HEADER: \usepackage[parfill]{parskip}
+#+LATEX_HEADER: \setlength{\parindent}{0pt}
+
+* Synopsis
+
+This directory contains a Docker development configuration (~develop-compose.yml~) and a Docker Cluster setup configuration (~docker-compose.yml~) for SENAITE LIMS. The Docker development configuration(~develop-compose.yml~) and Docker Cluster setup configuration (~docker-compose.yml~) are independent of one another (i.e. only one is required to setup Senaite).  The Docker development (~develop-compose.yml~) configuration reduces the number of SENAITE instance to one which saves times when reloading Senaite during development. The Cluster setup configuration mimics the system that should be setup for your production environment. It is advised not to run your production (or live) version of Senaite from a Docker container and instead install Docker on a server (e.g. Debian, Ubuntu, SUSE, etc.).
+The Cluster setup starts the following services:
++ NGINX web server, serving HTTPS on port 8000
++ HAProxy load balancer, running on port 8888
++ 2 SENAITE instances, running on port 8081 and 8082
++ 1 ZEO Database Server
+For Windows Users the database can be stored locally (i.e. on the windows system) using a volume bind. See the volume listing in the develop-compose and docker-compose.yml files. 
+#+begin_src sh
+volumes:
+  senaite_vol:  
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: 'C:\DockerLimsEnvFiles\senaite\data'
+#+end_src
+
+* Versions
+
+The Docker SENAITE Docker image used in this setup is version ~2.x~ from here:
+https://hub.docker.com/r/senaite/senaite/tags
+
+This image is automatically built from the official ~senaite.core~ GitHub repository:
+https://github.com/senaite/senaite.core/actions/workflows/docker.yml
+
+NOTE ☝: This Docker image contains the latest code and should not be used for
+        production environments!
+
+
+* To download or update to the latest SENAITE 2.x image:
+In PowerShell or Command Prompt, run;
+  #+begin_src sh
+  docker pull senaite/senaite:2.x
+  #+end_src
+
+* Start a Cluster instance using Cluster setup configuration
+In Powershell or Command Prompt, run;
++ Change your directory to the path where the ~docker-compose.yml~ is located, example:
+  #+begin_src sh
+  cd C:\Users\nael-lab\Documents\GitHub\iaea.lims\docker
+  #+end_src
+
+NOTE ☝: Your path will be diffrent. Update the path to the folder where you have placed your docker-compose.yml file!
+
++ start the instance 
+  #+begin_src sh
+  docker-compose -f docker-compose.yml up
+  #+end_src
+
+Once complete, access Senaite via your browser at http://127.0.0.1:8080
+
+* Start a development instance using development configuration
+In Powershell or Command Prompt, run;
++ Change your directory to the path where the ~develop-compose.yml~ is located, example:
+  #+begin_src sh
+  cd C:\Users\nael-lab\Documents\GitHub\iaea.lims\docker
+  #+end_src
+
+NOTE ☝: Your path will be different. Update the path to the folder where you have placed your develop-compose.yml file!
+
++ start the instance 
+  #+begin_src sh
+  docker-compose -f develop-compose.yml up
+  #+end_src
+
+Once complete, access Senaite via your browser at http://127.0.0.1:8080
+
+If you would like to get started with developing in Senaite and need a way to reload your code changes you can use @@reload. To do so, 
+
+* Start the development instance in foreground mode:
+Modify your develop-compose.yml. You need to include the 'fg' command as shown;
+
+  #+begin_src sh
+	version: "3.9"
+
+	services:
+
+	  instance:
+		container_name: instance
+		image: senaite/senaite:2.x
+		restart: "unless-stopped"
+		command: fg
+		ports:
+		  - "8080:8080"
+		deploy:
+		  resources:
+			limits:
+			  memory: 4GB
+		environment:   
+		  ADDONS: "senaite.databox plone.reload"
+		  SOURCES: "senaite.databox=git https://github.com/senaite/senaite.databox.git branch=master"
+		
+		volumes:
+		  # we need to be selective here, because build files with symlinks, e.g. parts/omelette, cause problems.
+		  - senaite_vol:/data/.
+
+
+	volumes:
+	  senaite_vol:
+		driver: local
+		driver_opts:
+		  type: 'none'
+		  o: 'bind'
+		  device: 'C:\DockerLimsEnvFiles\senaite\data'
+
+  #+end_src
+  
+The reload feature is accessed from http://127.0.0.1:8080//@@reload.
+
