@@ -7,3 +7,9 @@ The RML laboratory of the IAEA are currently adapting Senaite LIMS to their labo
 3)	https://github.com/LimsIAEA/LIMS_dev - Private repository which is used to manage our LIMS developments at the IAEA RML Laboratories.
 
 We wish to share all information with other laboratories via the "LIMS_share" Github repository. 
+
+## Get started with Senaite in Docker 
+To get started with Senaite in a docker container please see out guide https://github.com/LimsIAEA/LIMS_share/tree/main/docker.
+
+## Our enterprise partner RidingBytes
+Our enterprise partner RidingBytes has helped us immensely in getting our Senaite system setup. Check them out at https://www.ridingbytes.com/.
