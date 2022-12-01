@@ -18,7 +18,7 @@ The Cluster setup starts the following services:
 + HAProxy load balancer, running on port 8888
 + 2 SENAITE instances, running on port 8081 and 8082
 + 1 ZEO Database Server
-For Windows Users the database can be stored locally (i.e. on the windows system) using a volume bind. See the volume listing in the develop-compose and docker-compose.yml files. 
+For Windows Users the database can be stored locally (i.e. on the windows system) using a volume bind. See the volume listing in the develop-compose and docker-compose.yml files. The text below is a snippet from the file.  Update the path 'C:\DockerLimsEnvFiles\senaite\data' to a location where you would like to store your Senaite data. 
 #+begin_src sh
 volumes:
   senaite_vol:  
@@ -29,9 +29,9 @@ volumes:
       device: 'C:\DockerLimsEnvFiles\senaite\data'
 #+end_src
 
-* Versions
+* SENAITE Docker Versions
 
-The Docker SENAITE Docker image used in this setup is version ~2.x~ from here:
+The SENAITE Docker image used in this setup is version ~2.x~ from here:
 https://hub.docker.com/r/senaite/senaite/tags
 
 This image is automatically built from the official ~senaite.core~ GitHub repository:
@@ -56,7 +56,7 @@ In Powershell or Command Prompt, run;
 
 NOTE ☝: Your path will be diffrent. Update the path to the folder where you have placed your docker-compose.yml file!
 
-+ start the instance 
++ Start the instance 
   #+begin_src sh
   docker-compose -f docker-compose.yml up
   #+end_src
@@ -72,17 +72,16 @@ In Powershell or Command Prompt, run;
 
 NOTE ☝: Your path will be different. Update the path to the folder where you have placed your develop-compose.yml file!
 
-+ start the instance 
++ Start the instance 
   #+begin_src sh
   docker-compose -f develop-compose.yml up
   #+end_src
 
 Once complete, access Senaite via your browser at http://127.0.0.1:8080
 
-If you would like to get started with developing in Senaite and need a way to reload your code changes you can use @@reload. To do so, 
-
 * Start the development instance in foreground mode:
-Modify your develop-compose.yml. You need to include the 'fg' command as shown;
+If you would like to get started with developing in Senaite and need a way to reload your code changes without restarting Docker you can use @@reload. To do so, 
+modify your develop-compose.yml so that Senaite starts in foreground mode. You need to include the 'fg' command as shown;
 
   #+begin_src sh
 	version: "3.9"
@@ -118,6 +117,8 @@ Modify your develop-compose.yml. You need to include the 'fg' command as shown;
 		  device: 'C:\DockerLimsEnvFiles\senaite\data'
 
   #+end_src
-  
-The reload feature is accessed from http://127.0.0.1:8080//@@reload.
+To determine if you have successfully launched Senaite in foreground mode, navigate to http://127.0.0.1:8080/senaite/@@overview-controlpanel. The botton of the page will state that 'you are running debug mode'. 
+The reload feature is accessed from http://127.0.0.1:8080//@@reload. 
+
+NOTE ☝: Not all features can be reloaded using this feature and in some situations you might need to restart your container to reload!
 
