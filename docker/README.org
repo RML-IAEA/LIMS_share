@@ -2,7 +2,7 @@
 #+AUTHOR: RIDING BYTES GmbH 
 #+EMAIL: rb@ridingbytes.com
 #+DATE: 2022-06-06
-#+MODIFIED BY: Niall Murphy (IAEA)
+#+MODIFIED: Niall Murphy (IAEA)
 #+SETUPFILE: https://fniessen.github.io/org-html-themes/org/theme-readtheorg.setup
 #+LATEX_CLASS: article
 #+LATEX_CLASS_OPTIONS: [a4paper,11pt]
