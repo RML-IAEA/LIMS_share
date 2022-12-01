@@ -50,10 +50,11 @@ services:
           memory: 4GB
     environment:
       ZEO_ADDRESS: "zeo:8080"
-      ADDONS: "iaea.lims senaite.databox"
+      ADDONS: "senaite.databox"
       SOURCES: "senaite.databox=git https://github.com/senaite/senaite.databox.git branch=master"
     volumes:
       # we need to be selective here, because build files with symlinks, e.g. parts/omelette, cause problems.
+      - senaite_vol:/data/.
 
   client2:
     container_name: client2
@@ -73,6 +74,7 @@ services:
       SOURCES: "senaite.databox=git https://github.com/senaite/senaite.databox.git branch=master"
     volumes:
       # we need to be selective here, because build files with symlinks, e.g. parts/omelette, cause problems.
+      - senaite_vol:/data/.
 
 volumes:
   senaite_vol:
