@@ -1,4 +1,4 @@
-#+TITLE: SENAITE Docker Documentation
+#+TITLE: SENAITE Docker Guide
 #+AUTHOR: RIDING BYTES GmbH 
 #+EMAIL: rb@ridingbytes.com
 #+DATE: 2022-06-06
