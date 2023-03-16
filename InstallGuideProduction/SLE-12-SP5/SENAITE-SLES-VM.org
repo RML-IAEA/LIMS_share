@@ -1,0 +1,916 @@
+#+TITLE: SENAITE Installation Documentation
+#+AUTHOR: RIDING BYTES GmbH, updated by NiallMurphy-IAEA
+#+EMAIL: rb@ridingbytes.com
+#+DATE: 2023-03-16
+#+SETUPFILE: theme-readtheorg.setup
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS: [a4paper,11pt]
+#+LATEX_HEADER: \usepackage[left=2cm, right=1.5cm, top=2cm, bottom=1cm]{geometry}
+#+LATEX_HEADER: \usepackage[parfill]{parskip}
+
+* SENAITE Installation Process on SUSE Enterprise Server
+  :PROPERTIES:
+  :Password: hi8be1ma
+  :header-args: :dir /ssh:root@192.168.238.136:/root
+  :header-args: :exports both
+  :END:
+
+** Abstract
+
+   This document describes the steps to install [[https://github.com/senaite/senaite.core][SENAITE LIMS]] on an Suse Linux
+   Enterprise Server 12.
+
+   The setup will be done over the terminal, so there is no need for a graphical
+   environment, e.g. Gnome or KDE.
+
+
+** SUSE Linux Enterprise Server VM
+
+   This documentation is targeted for =SUSE Linux Enterprise Server 12 SP5=.
+
+   #+begin_SRC sh
+     cat /etc/os-release
+   #+end_SRC
+
+   Output:
+   : NAME="SLES"
+   : VERSION="12-SP5"
+   : VERSION_ID="12.5"
+   : PRETTY_NAME="SUSE Linux Enterprise Server 12 SP5"
+   : ID="sles"
+   : ANSI_COLOR="0;32"
+   : CPE_NAME="cpe:/o:suse:sles:12:sp5"
+
+
+** Install required packages
+
+   All packages are installed with [[https://documentation.suse.com/smart/linux/html/concept-zypper/index.html][zypper]] from the command line.
+
+   The installed packages are fetched from the provided installation medium,
+   which has to be included as a ~zypper~ repository:
+
+
+   This section describes how to install required packages through zypper, a
+   command line tool for managing software.
+
+*** Adding the installation DVD as zypper repository
+
+   #+begin_src sh
+     zypper ar -c -t yast2 \
+            "iso:/?iso=/root/iso/SLE-12-SP5-Server-DVD-x86_64-GM-DVD1.iso" SLE-12-DVD1
+   #+end_src
+
+   List all repositories:
+
+   #+begin_src sh :results output verbatim
+     zypper lr
+   #+end_src
+
+   Output:
+   : Repository priorities are without effect.
+   : All enabled repositories share the same priority.
+   :
+   : # | Alias       | Name        | Enabled | GPG Check | Refresh
+   : --+-------------+-------------+---------+-----------+--------
+   : 1 | SLE-12-DVD1 | SLE-12-DVD1 | Yes     | (r ) Yes  | No
+
+
+   Refresh repositories:
+
+   #+begin_src sh :results output verbatim
+     zypper refresh
+   #+end_src
+
+   Output:
+   : Repository 'SLE-12-DVD1' is up to date.
+   : All repositories have been refreshed.
+
+
+*** Installing gcc
+
+   ~gcc~ is needed to build some required ~C~ extensions.
+
+   #+begin_src sh :results output verbatim
+     zypper install gcc
+   #+end_src
+
+   Output:
+   : Loading repository data...
+   : Reading installed packages...
+   : 'gcc' is already installed.
+   : No update candidate for 'gcc-4.8-6.189.x86_64'. The highest available version is already installed.
+   : Resolving package dependencies...
+   : Nothing to do.
+
+
+*** Installing the Python 2 development headers
+
+   The python development headers are needed to build some required ~C~ extensions.
+
+   #+begin_src sh :results output verbatim
+     zypper install python-devel
+   #+end_src
+
+   Output:
+   : Loading repository data...
+   : Reading installed packages...
+   : 'python-devel' is already installed.
+   : No update candidate for 'python-devel-2.7.13-28.31.1.x86_64'.
+   : The highest available version is already installed.
+   : Resolving package dependencies...
+   : Nothing to do.
+
+
+*** Installing libpango
+   #+begin_src sh :results output verbatim
+     zypper install libpango-1_0-0
+   #+end_src
+   
+*** Installing Git
+
+   [[https://git-scm.com][Git]] is a distributed version control system to checkout the official Senaite sources.
+
+   #+begin_src sh :results output verbatim
+     zypper install git-core
+   #+end_src
+
+   Output:
+   : Loading repository data...
+   : Reading installed packages...
+   : 'git-core' is already installed.
+   : No update candidate for 'git-core-2.12.3-27.17.2.x86_64'.
+   : The highest available version is already installed.
+   : Resolving package dependencies...
+   : Nothing to do.
+
+
+*** Installing NGINX
+
+    [[https://nginx.org][NGINX]] is not provided on the installation medium. Therefore, it has to be
+    added over a different repository:
+
+    #+begin_src sh :results output verbatim
+      zypper -n addrepo -G -t yum -c 'http://nginx.org/packages/sles/12' nginx
+      zypper refresh
+      zypper -n install nginx-1.20.2
+    #+end_src
+
+    Output:
+    : Loading repository data...
+    : Reading installed packages...
+    : 'nginx' is already installed.
+    : No update candidate for 'nginx-1.20.2-1.sles12.ngx.x86_64'.
+    : The highest available version is already installed.
+    : Resolving package dependencies...
+    : Nothing to do.
+
+    Further information can be found here:
+    https://www.bluerange.io/docs/relution-installguide/native_installation/SLES_nginx.html
+
+
+** Add required  users
+
+   We need two users for the installations process:
+
+    - ~senaite~: regular user
+    - ~senaite_daemon~: system user
+
+   The home folder of the first user is used for the whole installation.
+   Consequently, all the files in there are owned by this user.
+
+   The second user is used to drop the privileges when SENAITE starts.
+   It is a system user with no login shell and no further rights.
+
+   Creating the user ~senaite~:
+
+   #+begin_src sh :results output verbatim
+     groupadd senaite
+     useradd --create-home --groups senaite senaite
+   #+end_src
+
+   Creating the user ~senaite_daemon~:
+
+   #+begin_src sh :results output verbatim
+     useradd --create-home --groups senaite senaite_daemon
+   #+end_src
+
+
+** Install pip and virtualenv
+
+   ~pip~ is the package installer for Python and ~virtualenv~ is a tool to create
+   isolated Python environments.
+
+   Both packages has to be installed as ~root~:
+
+  #+begin_src sh :results output verbatim
+    curl https://bootstrap.pypa.io/pip/2.7/get-pip.py -o get-pip.py
+    python get-pip.py
+  #+end_src
+
+  Output:
+  : Collecting pip<21.0
+  :   Using cached pip-20.3.4-py2.py3-none-any.whl (1.5 MB)
+  : Installing collected packages: pip
+  :   Attempting uninstall: pip
+  :     Found existing installation: pip 20.3.4
+  :     Uninstalling pip-20.3.4:
+  :       Successfully uninstalled pip-20.3.4
+  : Successfully installed pip-20.3.4
+
+
+  Install ~virtualenv~:
+
+  #+begin_src sh :results output verbatim
+    pip install virtualenv
+  #+end_src
+  Output:
+  #+begin_example
+  Collecting virtualenv
+    Using cached virtualenv-20.10.0-py2.py3-none-any.whl (5.6 MB)
+  Requirement already satisfied: importlib-metadata>=0.12; python_version < "3.8" in /usr/lib/python2.7/site-packages (from virtualenv) (2.1.2)
+  Requirement already satisfied: backports.entry-points-selectable>=1.0.4 in /usr/lib/python2.7/site-packages (from virtualenv) (1.1.1)
+  Requirement already satisfied: platformdirs<3,>=2 in /usr/lib/python2.7/site-packages (from virtualenv) (2.0.2)
+  Requirement already satisfied: six<2,>=1.9.0 in /usr/lib/python2.7/site-packages (from virtualenv) (1.16.0)
+  Requirement already satisfied: importlib-resources>=1.0; python_version < "3.7" in /usr/lib/python2.7/site-packages (from virtualenv) (3.3.1)
+  Requirement already satisfied: distlib<1,>=0.3.1 in /usr/lib/python2.7/site-packages (from virtualenv) (0.3.3)
+  Requirement already satisfied: filelock<4,>=3.2 in /usr/lib/python2.7/site-packages (from virtualenv) (3.2.1)
+  Requirement already satisfied: pathlib2<3,>=2.3.3; python_version < "3.4" and sys_platform != "win32" in /usr/lib/python2.7/site-packages (from virtualenv) (2.3.6)
+  Requirement already satisfied: contextlib2; python_version < "3" in /usr/lib/python2.7/site-packages (from importlib-metadata>=0.12; python_version < "3.8"->virtualenv) (0.6.0.post1)
+  Requirement already satisfied: zipp>=0.5 in /usr/lib/python2.7/site-packages (from importlib-metadata>=0.12; python_version < "3.8"->virtualenv) (1.2.0)
+  Requirement already satisfied: configparser>=3.5; python_version < "3" in /usr/lib/python2.7/site-packages (from importlib-metadata>=0.12; python_version < "3.8"->virtualenv) (4.0.2)
+  Requirement already satisfied: typing; python_version < "3.5" in /usr/lib/python2.7/site-packages (from importlib-resources>=1.0; python_version < "3.7"->virtualenv) (3.10.0.0)
+  Requirement already satisfied: singledispatch; python_version < "3.4" in /usr/lib/python2.7/site-packages (from importlib-resources>=1.0; python_version < "3.7"->virtualenv) (3.7.0)
+  Requirement already satisfied: scandir; python_version < "3.5" in /usr/lib64/python2.7/site-packages (from pathlib2<3,>=2.3.3; python_version < "3.4" and sys_platform != "win32"->virtualenv) (1.10.0)
+  Installing collected packages: virtualenv
+  Successfully installed virtualenv-20.10.0
+  #+end_example
+
+
+** Install SENAITE LIMS
+
+   The installation is done in the home folder of the ~senaite~ user.
+
+   #+begin_src sh :results output verbatim
+     su - senaite
+     pwd
+   #+end_src
+
+   Output:
+   :  /home/senaite
+      
+   Creating a new ~virtualenv~:
+
+   #+begin_src sh :results output verbatim
+     su - senaite
+     virtualenv -p /usr/bin/python2.7 senaitelims
+     source /home/senaite/senaitelims/bin/activate
+   #+end_src
+
+   Output:
+   : created virtual environment CPython2.7.13.final.0-64 in 196ms
+   :   creator CPython2Posix(dest=/home/senaite/senaitelims, clear=False, no_vcs_ignore=False, global=False)
+   :   seeder FromAppData(download=False, pip=bundle, wheel=bundle, setuptools=bundle, via=copy, app_data_dir=/home/senaite/.local/share/virtualenv)
+   :     added seed packages: pip==20.3.4, setuptools==44.1.1, wheel==0.37.0
+   :   activators NushellActivator,PythonActivator,FishActivator,CShellActivator,PowerShellActivator,BashActivator
+
+   The global Python interperter should now point to the executable from the virtualenv. It is very important that the output is the same as below. 
+
+   #+begin_src sh :results output verbatim
+     su - senaite
+     source /home/senaite/senaitelims/bin/activate
+     which python
+   #+end_src
+   
+   Output:
+   : /home/senaite/senaitelims/bin/python
+
+
+   Installing Python requirements:
+
+   #+begin_src sh :results output results
+     su - senaite
+     source /home/senaite/senaitelims/bin/activate
+     cd  /home/senaite/senaitelims
+     cat << EOF > requirements.txt
+     setuptools==42.0.2
+     zc.buildout==2.13.3
+     pip==20.1.1
+     wheel
+     EOF
+     pip install -r requirements.txt
+   #+end_src
+
+   Output:
+   #+begin_example
+   Collecting setuptools==42.0.2
+     Using cached setuptools-42.0.2-py2.py3-none-any.whl (583 kB)
+   Collecting zc.buildout==2.13.3
+     Using cached zc.buildout-2.13.3-py2.py3-none-any.whl (153 kB)
+   Collecting pip==20.1.1
+     Using cached pip-20.1.1-py2.py3-none-any.whl (1.5 MB)
+   Requirement already satisfied: wheel in ./lib/python2.7/site-packages (from -r requirements.txt (line 4)) (0.37.0)
+   Installing collected packages: setuptools, zc.buildout, pip
+     Attempting uninstall: setuptools
+       Found existing installation: setuptools 44.1.1
+       Uninstalling setuptools-44.1.1:
+         Successfully uninstalled setuptools-44.1.1
+     Attempting uninstall: pip
+       Found existing installation: pip 20.3.4
+       Uninstalling pip-20.3.4:
+         Successfully uninstalled pip-20.3.4
+   Successfully installed pip-20.1.1 setuptools-42.0.2 zc.buildout-2.13.3
+   #+end_example
+
+   Adding the [[https://www.buildout.org/en/latest][buildout]] configuration file into ~/home/senaite/senaitelims/buildout.cfg~: 
+   You can use VIM text editor program to create buildout.cfg. The source list([sources]) pulls the most up to date source files from github. These files include restrictions
+   for the version of plone to use. The current (16/05/2023) plone versions is 5.2.11. These might need to be updated if the requirements in the source files are updated. To update 
+   modify the plone version numbers in the buildout.cfg file. There is two locations where the plone versions are referenced (i.e. https://dist.plone.org/release/5.2.11/versions.cfg
+    and https://dist.plone.org/release/5.2.11/)
+
+
+   #+begin_src conf :tangle /ssh:root@192.168.238.135:/home/senaite/senaitelims/buildout.cfg
+  [buildout]
+  extends =
+      https://dist.plone.org/release/5.2.11/versions.cfg
+
+  #eggs-directory=../buildout-cache/eggs
+  #download-cache=../buildout-cache/downloads
+  eggs-directory=eggs
+  download-cache=downloads
+
+  newest = false
+  prefer-final = true
+  show-picked-versions = true
+  versions = versions
+
+  index = https://pypi.python.org/simple/
+
+  find-links =
+      https://dist.plone.org
+      http://effbot.org/downloads
+      https://dist.plone.org/release/5.2.11/
+
+  extensions =
+      buildout.sanitycheck
+      mr.developer
+
+  auto-checkout = *
+
+  effective-user = senaite_daemon
+  buildout-user = senaite
+
+  eggs =
+      Plone
+      Pillow
+      senaite.core
+      senaite.app.listing
+      senaite.app.spotlight
+      senaite.app.supermodel
+      senaite.databox
+      senaite.impress
+      senaite.lims
+      senaite.jsonapi
+      ZopeHealthWatcher
+      Products.ZNagios
+      
+  zcml =
+
+  var-dir=/home/senaite/data/senaite
+
+  backups-dir=/home/senaite/data/senaite
+
+  user=admin:admin
+
+  environment-vars =
+      PYTHON_EGG_CACHE ${buildout:var-dir}/.python-eggs
+      TZ Europe/Monaco
+      zope_i18n_compile_mo_files true
+
+  parts =
+      zeoserver
+      client1
+      client2
+      client_reserved
+      backup
+      zopepy
+      precompiler
+      setpermissions
+
+  [sources]
+  senaite.core = git https://github.com/senaite/senaite.core.git branch=2.x
+  senaite.app.listing = git https://github.com/senaite/senaite.app.listing.git branch=2.x
+  senaite.app.spotlight = git https://github.com/senaite/senaite.app.spotlight.git branch=2.x
+  senaite.app.supermodel = git https://github.com/senaite/senaite.app.supermodel.git branch=2.x
+  senaite.databox = git https://github.com/senaite/senaite.databox.git branch=master
+  senaite.impress = git https://github.com/senaite/senaite.impress.git branch=2.x
+  senaite.lims = git https://github.com/senaite/senaite.lims.git branch=2.x
+  senaite.jsonapi = git https://github.com/senaite/senaite.jsonapi.git branch=2.x
+
+  [zeoserver]
+  recipe = plone.recipe.zeoserver
+  zeo-address = 127.0.0.1:8080
+  effective-user = ${buildout:effective-user}
+  environment-vars = ${buildout:environment-vars}
+  var = ${buildout:var-dir}
+  blob-storage = ${buildout:var-dir}/blobstorage
+  zeo-log     = ${buildout:var-dir}/zeoserver/zeoserver.log
+  pid-file    = ${buildout:var-dir}/zeoserver/zeoserver.pid
+  socket-name = ${buildout:var-dir}/zeoserver/zeo.zdsock
+
+  [client_base]
+  user = ${buildout:user}
+  effective-user = ${buildout:effective-user}
+  debug-mode = off
+  verbose-security = off
+  deprecation-warnings = off
+  var = ${buildout:var-dir}
+  blob-storage = ${:var}/blobstorage
+  event-log-max-size = 5 MB
+  event-log-old-files = 5
+  access-log-max-size = 20 MB
+  access-log-old-files = 5
+  eggs =
+      ${buildout:eggs}
+  zcml =
+      ${buildout:zcml}
+  wsgi = on
+  # zodb-temporary-storage = off
+
+  environment-vars = ${buildout:environment-vars}
+  zeo-client = true
+  zeo-address = 127.0.0.1:8080
+  shared-blob = on
+  http-fast-listen = off
+  event-log = ${buildout:var-dir}/${:_buildout_section_name_}/event.log
+  z2-log    = ${buildout:var-dir}/${:_buildout_section_name_}/Z2.log
+  pid-file  = ${buildout:var-dir}/${:_buildout_section_name_}/${:_buildout_section_name_}.pid
+  lock-file = ${buildout:var-dir}/${:_buildout_section_name_}/${:_buildout_section_name_}.lock
+  zodb-cache-size = 50000
+  zodb-cache-size-bytes = 0
+  zserver-threads = 4
+  python-check-interval = 2000
+
+  [client1]
+  <= client_base
+  recipe = plone.recipe.zope2instance
+  http-address = 127.0.0.1:8081
+  zope-conf-additional =
+
+  [client2]
+  <= client_base
+  recipe = plone.recipe.zope2instance
+  http-address = 127.0.0.1:8082
+  zope-conf-additional =
+
+  [client_reserved]
+  <= client_base
+  recipe = plone.recipe.zope2instance
+  http-address = 127.0.0.1:8083
+
+  [backup]
+  recipe = collective.recipe.backup
+  location = ${buildout:backups-dir}/backups
+  blobbackuplocation = ${buildout:backups-dir}/blobstoragebackups
+  snapshotlocation = ${buildout:backups-dir}/snapshotbackups
+  blobsnapshotlocation = ${buildout:backups-dir}/blobstoragesnapshots
+  datafs = ${buildout:var-dir}/filestorage/Data.fs
+  blob-storage = ${buildout:var-dir}/blobstorage
+  keep = 5
+  keep_blob_days = 21
+  rsync_options =
+
+  [setpermissions]
+  recipe = plone.recipe.command
+  command =
+      # Dummy references to force this to execute after referenced parts
+      echo ${backup:location} > /dev/null
+      chmod 600 .installed.cfg
+      # Make sure anything we've created in var is r/w by our group, but no-one else
+      chmod -R ug+rwX,o-rwx ${buildout:var-dir}
+      chmod -R ug+rwX,o-rwx ${buildout:eggs-directory}
+      chmod -R ug+rwX,o-rwx ${buildout:directory}
+      # chmod -R ug+rwX,o-rwx ${buildout:backups-dir}
+      chmod 754 ${buildout:directory}/bin/*
+  update-command = ${:command}
+
+  [zopepy]
+  recipe = zc.recipe.egg
+  eggs = ${buildout:eggs}
+  interpreter = zopepy
+  scripts = zopepy
+
+  [precompiler]
+  recipe = plone.recipe.precompiler
+  eggs = ${buildout:eggs}
+  compile-mo-files = true
+
+  [versions]
+  buildout.sanitycheck = 1.0.2
+  zc.buildout=2.13.3
+  setuptools=42.0.2
+   #+end_src
+
+   NOTE: The ~user~ configuration will set the ~admin~ password for the ZOPE
+         application server and is later needed to create the initial SENAITE site!
+
+
+   Run ~buildout~
+
+   #+begin_src sh :results output results
+     su - senaite
+     cd /home/senaite/senaitelims
+     source /home/senaite/senaitelims/bin/activate
+     buildout -c buildout.cfg
+   #+end_src
+
+
+** Configure NGINX web server
+
+   This section describes how to configure NGINX as a reverse proxy and load
+   balancer to serve SENAITE LIMS via HTTP/S.
+
+*** NGINX main configuration
+
+   The ~nginx~ main configuration is located in ~/etc/nginx/nginx.conf~.
+   Change the contents of the file with the following configuration:
+
+   #+begin_src conf :tangle /ssh:root@192.168.238.135:/etc/nginx/nginx.conf
+     user nginx;
+     worker_processes auto;
+     pid /var/run/nginx.pid;
+     error_log /var/log/nginx/error.log notice;
+     include /etc/nginx/modules/*.conf;
+
+     events {
+         worker_connections  1024;
+     }
+
+     http {
+        gzip on;
+        sendfile on;
+        tcp_nopush on;
+        tcp_nodelay on;
+
+        keepalive_timeout 7200;
+        proxy_connect_timeout 7200;
+        proxy_send_timeout 7200;
+        proxy_read_timeout 7200;
+        send_timeout 7200;
+
+        types_hash_max_size 2048;
+        server_names_hash_bucket_size 256;
+        client_max_body_size 0;
+
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2; # Dropping SSLv3, ref: POODLE
+        ssl_prefer_server_ciphers on;
+
+        log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+        '$status $body_bytes_sent "$http_referer" '
+        '"$http_user_agent" "$http_x_forwarded_for"';
+        access_log /var/log/nginx/access.log;
+        error_log /var/log/nginx/error.log;
+
+        upstream senaite {
+            ip_hash;
+            server 127.0.0.1:8081 max_fails=3 fail_timeout=5s;
+            server 127.0.0.1:8082 max_fails=3 fail_timeout=5s;
+        }
+
+        include /etc/nginx/sites-enabled/*;
+        include /etc/nginx/conf.d/*.conf;
+     }
+   #+end_src
+
+
+*** Create an SSL certificate
+
+    https://www.suse.com/support/kb/doc/?id=000019241
+
+    #+begin_src sh
+      mkdir /etc/nginx/ssl
+      cd /etc/nginx/ssl
+      openssl genrsa -des3 -out server.key 2048
+      openssl req -new -key server.key -out server.csr
+      openssl x509 -req -days 3650 -in server.csr -signkey server.key -out server.crt
+    #+end_src
+
+    This step removes the passphrase from the key, so that it is not requested by NGINX:
+
+    #+begin_src sh
+      cd /etc/nginx/ssl
+      openssl rsa -in server.key -out server.key
+    #+end_src
+
+    NOTE: Web browsers will complain that the certificate is not valid and Google Chrome
+          does not allow to enter the site by clicking an exceptional allow button.
+          In this browser you need to enter "thisisunsafe" in the browser window.
+
+
+*** Open http https ports in firewall
+
+    We nned to open ports 80 and 443 in the firewall to allow access to HTTP and HTTPS.
+
+    - Open the YaST tool by issuing the following command: yast firewall
+    - Use the cursor keys to select Allowed Services, followed by the return key
+    - Use the tab key to select Advanced…, followed by the return key
+    - Enter ~http https~ as TCP Port (use a space to separate multiple ports)
+    - Select OK to close the Advanced dialog box.
+    - Select Next and review the summary of your changes.
+    - select Finish to apply your changes.
+
+
+*** Add the SENAITE LIMS proxy configuration
+
+    Add the following configuration into ~/etc/nginx/conf.d/senaite.conf~
+
+    #+begin_src conf :tangle /ssh:root@192.168.238.135:/etc/nginx/conf.d/senaite.conf
+     server {
+         listen 80 default_server;
+         return 301 https://$server_name$request_uri;
+     }
+
+     server {
+         listen 443 ssl http2 default_server;
+         listen [::]:443 ssl http2;
+
+         ssl_certificate /etc/nginx/ssl/server.crt;
+         ssl_certificate_key /etc/nginx/ssl/server.key;
+
+         # from https://cipherli.st/
+         # and https://raymii.org/s/tutorials/Strong_SSL_Security_On_nginx.html
+         ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+         ssl_prefer_server_ciphers on;
+         ssl_ciphers "EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH";
+         ssl_ecdh_curve secp384r1;
+         ssl_session_cache shared:SSL:10m;
+         #ssl_session_tickets off;
+         ssl_stapling on;
+         ssl_stapling_verify on;
+         resolver 8.8.8.8 8.8.4.4 valid=300s;
+         resolver_timeout 5s;
+         # Disable preloading HSTS for now.  You can use the commented out header line that includes
+         # the "preload" directive if you understand the implications.
+         #add_header Strict-Transport-Security "max-age=63072000; includeSubdomains; preload";
+         add_header Strict-Transport-Security "max-age=63072000; includeSubdomains";
+         add_header X-Frame-Options SAMEORIGIN;
+         add_header X-Content-Type-Options nosniff;
+
+         access_log /var/log/nginx/senaite.access.log;
+         error_log /var/log/nginx/senaite.error.log error;
+
+         # Allow Cross-Origin Resource Sharing from our HTTP domain
+         add_header "Access-Control-Allow-Origin" "http://localhost";
+         add_header "Access-Control-Allow-Credentials" "true";
+         add_header "Access-Control-Allow-Methods" "GET, POST, OPTIONS";
+         add_header "X-Frame-Options" "SAMEORIGIN";
+
+         location ~* \.(?:jpg|jpeg|png|gif|ico|css|js|otf|ttf|eot|woff|woff2|svg)$ {
+             # https://docs.pylonsproject.org/projects/waitress/en/latest/reverse-proxy.html
+             proxy_set_header    X-Forwarded-Proto    $scheme;
+             proxy_set_header    X-Forwarded-For      $proxy_add_x_forwarded_for;
+             proxy_set_header    X-Forwarded-Host     $host:$server_port;
+             proxy_set_header    X-Forwarded-Port     $server_port;
+             proxy_set_header    Host                 $http_host;
+             proxy_set_header    X-Real-IP            $remote_addr;
+             rewrite             ^(.*)$ /VirtualHostBase/$scheme/$host/senaite/VirtualHostRoot/$1 break;
+             proxy_pass          http://senaite;
+         }
+
+         location / {
+             # https://docs.pylonsproject.org/projects/waitress/en/latest/reverse-proxy.html
+             proxy_set_header    X-Forwarded-Proto    $scheme;
+             proxy_set_header    X-Forwarded-For      $proxy_add_x_forwarded_for;
+             proxy_set_header    X-Forwarded-Host     $host:$server_port;
+             proxy_set_header    X-Forwarded-Port     $server_port;
+             proxy_set_header    Host                 $http_host;
+             proxy_set_header    X-Real-IP            $remote_addr;
+             rewrite             ^(.*)$ /VirtualHostBase/$scheme/$host/senaite/VirtualHostRoot/$1 break;
+             proxy_pass          http://senaite;
+         }
+     }
+   #+end_src
+
+
+*** Start NGINX automatically on system boot
+
+    Enable the ~nginx~ service:
+
+    #+begin_src sh :results output verbatim
+      systemctl enable nginx
+      systemctl start nginx
+      systemctl status nginx
+    #+end_src
+
+    #+RESULTS:
+    #+begin_example
+    ● nginx.service - nginx - high performance web server
+       Loaded: loaded (/usr/lib/systemd/system/nginx.service; enabled; vendor preset: disabled)
+       Active: active (running) since Mon 2021-11-29 16:25:16 CET; 11min ago
+         Docs: http://nginx.org/en/docs/
+     Main PID: 2033 (nginx)
+        Tasks: 3 (limit: 512)
+       CGroup: /system.slice/nginx.service
+               ├─2033 nginx: master process /usr/sbin/nginx -c /etc/nginx/nginx.c...
+               ├─2035 nginx: worker process
+               └─2036 nginx: worker process
+
+    Nov 29 16:25:16 senaite systemd[1]: Starting nginx - high performance web s.....
+    Nov 29 16:25:16 senaite nginx[1930]: nginx: [warn] "ssl_stapling" ignored, ...t"
+    Nov 29 16:25:16 senaite systemd[1]: nginx.service: PID file /var/run/nginx....ry
+    Nov 29 16:25:16 senaite systemd[1]: Started nginx - high performance web server.
+    Nov 29 16:36:44 senaite systemd[1]: Started nginx - high performance web server.
+    Hint: Some lines were ellipsized, use -l to show in full.
+    #+end_example
+
+
+** Install Supervisor
+
+   This section describes how to install [[http://supervisord.org/installing.html][Supervisor]], a client/server system that
+   allows its users to control a number of processes on UNIX-like operating
+   systems.
+
+   #+begin_src sh :results output verbatim
+     pip install supervisor
+   #+end_src
+
+   Output:
+
+   #+RESULTS:
+   : Collecting supervisor
+   :   Using cached supervisor-4.2.2-py2.py3-none-any.whl (743 kB)
+   : Installing collected packages: supervisor
+   : Successfully installed supervisor-4.2.2
+
+
+   Create the required supervisor directories:
+
+   #+begin_src sh :results output verbatim
+     mkdir -p /etc/supervisor/conf.d
+     mkdir -p /var/log/supervisor
+   #+end_src
+
+
+   Add the global Supervisor configuration in ~/etc/supervisor/supervisord.conf~:
+
+   #+begin_src conf :tangle /ssh:root@192.168.238.135:/etc/supervisor/supervisord.conf
+     [unix_http_server]
+     file=/var/run/supervisor.sock    ; (the path to the socket file)
+     chmod=0700                       ; sockef file mode (default 0700)
+
+     [supervisord]
+     logfile=/var/log/supervisor/supervisord.log ; (main log file;default $CWD/supervisord.log)
+     pidfile=/var/run/supervisord.pid            ; (supervisord pidfile;default supervisord.pid)
+     childlogdir=/var/log/supervisor             ; ('AUTO' child log dir, default $TEMP)
+
+     ; the below section must remain in the config file for RPC
+     ; (supervisorctl/web interface) to work, additional interfaces may be
+     ; added by defining them in separate rpcinterface: sections
+     [rpcinterface:supervisor]
+     supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
+
+     [supervisorctl]
+     serverurl=unix:///var/run/supervisor.sock ; use a unix:// URL  for a unix socket
+
+     ; The [include] section can just contain the "files" setting.  This
+     ; setting can list multiple files (separated by whitespace or
+     ; newlines).  It can also contain wildcards.  The filenames are
+     ; interpreted as relative to this file.  Included files *cannot*
+     ; include files themselves.
+
+     [include]
+     files = /etc/supervisor/conf.d/*.conf
+
+     [inet_http_server]
+     port = 127.0.0.1:9001
+
+   #+end_src
+
+
+   Add the SENAITE configuration in ~/etc/supervisor/conf.d/senaite.conf~:
+
+   #+begin_src conf :tangle /ssh:root@192.168.238.135:/etc/supervisor/conf.d/senaite.conf
+     [program:senaite_zeo]
+     command=/home/senaite/senaitelims/bin/zeoserver fg
+     directory=/home/senaite/senaitelims
+     redirect_stderr=false
+     autostart=true
+     autorestart=unexpected
+     user=senaite_daemon
+     startsecs=1
+     stopwaitsecs=10
+
+     [program:senaite_client1]
+     command=/home/senaite/senaitelims/bin/client1 console
+     directory=/home/senaite/senaitelims
+     redirect_stderr=false
+     autostart=true
+     autorestart=unexpected
+     user=senaite_daemon
+     startsecs=1
+     stopwaitsecs=60
+
+     [program:senaite_client2]
+     command=/home/senaite/senaitelims/bin/client2 console
+     directory=/home/senaite/senaitelims
+     redirect_stderr=false
+     autostart=true
+     autorestart=unexpected
+     user=senaite_daemon
+     startsecs=1
+     stopwaitsecs=60
+   #+end_src
+
+
+   Create a ~systemd~ service in ~/usr/lib/systemd/system/supervisor.service~:
+
+   #+begin_src conf :tangle /ssh:root@192.168.238.135:/usr/lib/systemd/system/supervisor.service
+     [Unit]
+     Description=Supervisor process control system for UNIX
+     Documentation=http://supervisord.org
+     After=network.target
+
+     [Service]
+     ExecStart=/usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf
+     ExecStop=/usr/bin/supervisorctl $OPTIONS shutdown
+     ExecReload=/usr/bin/supervisorctl -c /etc/supervisor/supervisord.conf $OPTIONS reload
+     KillMode=process
+     Restart=on-failure
+     RestartSec=50s
+
+     [Install]
+     WantedBy=multi-user.target
+   #+end_src
+
+
+   Reload the ~systemd~ configuration:
+
+
+   #+begin_src sh :results output verbatim
+     systemctl daemon-reload
+     systemctl enable supervisor
+     systemctl start supervisor
+     systemctl status supervisor
+   #+end_src
+
+   Output:
+
+   #+RESULTS:
+   #+begin_example
+   ● supervisor.service - Supervisor process control system for UNIX
+      Loaded: loaded (/usr/lib/systemd/system/supervisor.service; disabled; vendor preset: disabled)
+      Active: active (running) since Mon 2021-11-29 16:06:21 CET; 30s ago
+        Docs: http://supervisord.org
+    Main PID: 62220 (supervisord)
+       Tasks: 17 (limit: 512)
+      CGroup: /system.slice/supervisor.service
+              ├─62220 /usr/bin/python /usr/bin/supervisord -n -c /etc/supervisor...
+              ├─62239 /home/senaite/senaitelims/bin/python /home/senaite/senaite...
+              ├─62240 /home/senaite/senaitelims/bin/python /home/senaite/senaite...
+              └─62241 /home/senaite/senaitelims/bin/python /home/senaite/senaite...
+
+   Nov 29 16:06:21 senaite supervisord[62220]: 2021-11-29 16:06:21,539 INFO RPC...d
+   Nov 29 16:06:21 senaite supervisord[62220]: 2021-11-29 16:06:21,539 CRIT Ser...g
+   Nov 29 16:06:21 senaite supervisord[62220]: 2021-11-29 16:06:21,539 INFO sup...0
+   Nov 29 16:06:22 senaite supervisord[62220]: 2021-11-29 16:06:22,543 INFO spa...9
+   Nov 29 16:06:22 senaite supervisord[62220]: 2021-11-29 16:06:22,546 INFO spa...0
+   Nov 29 16:06:22 senaite supervisord[62220]: 2021-11-29 16:06:22,548 INFO spa...1
+   Nov 29 16:06:23 senaite supervisord[62220]: 2021-11-29 16:06:23,549 INFO suc...)
+   Nov 29 16:06:23 senaite supervisord[62220]: 2021-11-29 16:06:23,550 INFO suc...)
+   Nov 29 16:06:23 senaite supervisord[62220]: 2021-11-29 16:06:23,550 INFO suc...)
+   Nov 29 16:06:51 senaite systemd[1]: Started Supervisor process control syst...X.
+   Hint: Some lines were ellipsized, use -l to show in full.
+   #+end_example
+
+
+** Start SENAITE
+
+   When all of the previous steps has been done, SENAITE should start
+   automatically when the system starts / reboots.
+
+   It can be reached by browsing to https://<SERVER IP Adress> with any browser,
+   e.g. https://192.168.238.135.
+
+
+** Important Notes
+
+   Initially no SENAITE site has been added in the ZOPE application server.
+
+   This means that opening the server URL throws an error in the browser,
+   because NGINX expects the path ~senaite~ in the rewrite rule.
+
+   Therfore, one of the configured SENAITE instances has to be opened directly,
+   e.g. directly with an SSH tunnel *, or the ~senaite~ path has to be temporarily
+   removed from the NGINX rewrite rule.
+
+   *) Example: ~ssh root@192.168.238.136  -L 8081:localhost:8081~ 
+
+   When the installation screen is displayed on the application root site, a new
+   SENAITE site can be added by clicking the button "Create a new SENAITE site".
+
+   Alternatively, adding ~/@@senaite-addsite?site_id=senaite~ at the end of the URL
+   will open the installation screen as well.
+
+   NOTE: The username/password is the same as mentioned in the ~buildout.cfg~
