@@ -1,28 +1,19 @@
 #+TITLE: SENAITE Installation Documentation
 #+AUTHOR: RIDING BYTES GmbH, updated by NiallMurphy-IAEA
 #+EMAIL: rb@ridingbytes.com
-#+DATE: 2023-03-16
+#+DATE: 2023-03-16 updated by NiallMurphy-IAEA
 #+SETUPFILE: theme-readtheorg.setup
 #+LATEX_CLASS: article
 #+LATEX_CLASS_OPTIONS: [a4paper,11pt]
 #+LATEX_HEADER: \usepackage[left=2cm, right=1.5cm, top=2cm, bottom=1cm]{geometry}
 #+LATEX_HEADER: \usepackage[parfill]{parskip}
 
-* SENAITE Installation Process on SUSE Enterprise Server
-  :PROPERTIES:
-  :Password: hi8be1ma
-  :header-args: :dir /ssh:root@192.168.238.136:/root
-  :header-args: :exports both
-  :END:
-
 ** Abstract
 
-   This document describes the steps to install [[https://github.com/senaite/senaite.core][SENAITE LIMS]] on an Suse Linux
+   This document describes the steps to install [[https://github.com/senaite/senaite.core][SENAITE LIMS]] on a Suse Linux
    Enterprise Server 12.
-
    The setup will be done over the terminal, so there is no need for a graphical
    environment, e.g. Gnome or KDE.
-
 
 ** SUSE Linux Enterprise Server VM
 
@@ -47,7 +38,7 @@
    All packages are installed with [[https://documentation.suse.com/smart/linux/html/concept-zypper/index.html][zypper]] from the command line.
 
    The installed packages are fetched from the provided installation medium,
-   which has to be included as a ~zypper~ repository:
+   which must be included as a ~zypper~ repository:
 
 
    This section describes how to install required packages through zypper, a
@@ -168,7 +159,7 @@
     https://www.bluerange.io/docs/relution-installguide/native_installation/SLES_nginx.html
 
 
-** Add required  users
+** Add required users
 
    We need two users for the installations process:
 
@@ -521,6 +512,14 @@
      cd /home/senaite/senaitelims
      source /home/senaite/senaitelims/bin/activate
      buildout -c buildout.cfg
+   #+end_src
+   
+** Change permissions of files
+To ensure that the user senaite_daemon has access to the necessary files update permissions. This step is important if files are 
+copied to the respective directories.  
+
+   #+begin_src sh :results output results
+     chown -R senaite_daemon:senaite /home/senaite/senaitelims/
    #+end_src
 
 
