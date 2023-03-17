@@ -17,7 +17,7 @@
 
 ** SUSE Linux Enterprise Server VM
 
-   This documentation is targeted for =SUSE Linux Enterprise Server 12 SP5=.
+   This documentation is targeted for =SUSE Linux Enterprise Server 12 SP5=. First, we check our SUSE Linux Enterprise Server VM. 
 
    #+begin_SRC sh
      cat /etc/os-release
