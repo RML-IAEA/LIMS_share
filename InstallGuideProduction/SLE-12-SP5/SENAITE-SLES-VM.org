@@ -158,6 +158,8 @@
     Further information can be found here:
     https://www.bluerange.io/docs/relution-installguide/native_installation/SLES_nginx.html
 
+   NOTE: Some package dependencies of the latest version of nginx were not available at the time of writing ( 17/03/2023 ) and hence why the package 
+   is pinned to version 1.20.2.
 
 ** Add required users
 
