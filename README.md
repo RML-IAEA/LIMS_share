@@ -9,7 +9,11 @@ The RML laboratory of the IAEA are currently adapting Senaite LIMS to their labo
 We wish to share all information with other laboratories via the "LIMS_share" Github repository. 
 
 ## Get started with Senaite in Docker 
-To get started with Senaite in a docker container please see our guide https://github.com/LimsIAEA/LIMS_share/tree/main/docker.
+To get started with Senaite in a docker container please see our [guide](https://github.com/LimsIAEA/LIMS_share/tree/main/docker)
+
+## Get started with Senaite in a Production Environment 
+To get started with Senaite in a production environment please see our [guide](https://github.com/RML-IAEA/LIMS_share/blob/main/InstallGuideProduction/SLE-12-SP5/SENAITE-SLES-VM.org)
+
 
 ## Our enterprise partner RidingBytes
 Our enterprise partner RidingBytes has helped us immensely in getting our Senaite system setup. Check them out at https://www.ridingbytes.com/.
