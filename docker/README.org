@@ -1,5 +1,5 @@
 #+TITLE: SENAITE Docker Guide
-#+AUTHOR: RIDING BYTES GmbH 
+#+AUTHOR: RIDING BYTES GmbH edited by Niall Murphy
 #+EMAIL: rb@ridingbytes.com
 #+DATE: 2022-06-06
 #+MODIFIED: Niall Murphy (IAEA)
@@ -11,14 +11,17 @@
 #+LATEX_HEADER: \setlength{\parindent}{0pt}
 
 * Synopsis
+You can downlaod all files of the LIMS_share github [[https://github.com/RML-IAEA/LIMS_share/archive/refs/heads/main.zip][here]].
 
 This directory contains a Docker development configuration (~develop-compose.yml~) and a Docker Cluster setup configuration (~docker-compose.yml~) for SENAITE LIMS. The Docker development configuration(~develop-compose.yml~) and Docker Cluster setup configuration (~docker-compose.yml~) are independent of one another (i.e. only one is required to setup Senaite).  The Docker development (~develop-compose.yml~) configuration reduces the number of SENAITE instance to one which saves times when reloading Senaite during development. The Cluster setup configuration mimics the system that should be setup for your production environment. It is advised not to run your production (or live) version of Senaite from a Docker container and instead install Docker on a server (e.g. Debian, Ubuntu, SUSE, etc.).
+
 The Cluster setup starts the following services:
 + NGINX web server, serving HTTPS on port 8000
 + HAProxy load balancer, running on port 8888
 + 2 SENAITE instances, running on port 8081 and 8082
 + 1 ZEO Database Server
-For Windows Users the database can be stored locally (i.e. on the windows system) using a volume bind. See the volume listing in the develop-compose and docker-compose.yml files. The text below is a snippet from the file.  Update the path 'C:\DockerLimsEnvFiles\senaite\data' to a location where you would like to store your Senaite data. 
+
+For Windows Users the database can be stored locally (i.e. on the windows system) using a volume bind. See the volume listing in the develop-compose and docker-compose.yml files. The text below is a snippet from the file.  Update the path 'C:\DockerLimsEnvFiles\senaite\data' to a location where you would like to store your Senaite data. Ensure to create the data folder on your Windows machine. 
 #+begin_src sh
 volumes:
   senaite_vol:  
