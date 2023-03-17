@@ -855,8 +855,6 @@ copied to the respective directories.
    #+end_src
 
    Output:
-
-   #+RESULTS:
    #+begin_example
    ● supervisor.service - Supervisor process control system for UNIX
       Loaded: loaded (/usr/lib/systemd/system/supervisor.service; disabled; vendor preset: disabled)
