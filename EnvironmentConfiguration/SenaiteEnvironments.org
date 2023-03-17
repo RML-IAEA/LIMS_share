@@ -14,7 +14,7 @@
   - Staging Environment - An environment which is used to test any changes on a system that mimics the production environment.
   - Production Environment - The environment that is live. 
 
-  
+[[./Environments.png]]
 
 To get started with Senaite in a docker container please see our [guide](https://github.com/LimsIAEA/LIMS_share/tree/main/docker)
 To get started with Senaite in a staging or production environment please see our [guide](https://github.com/RML-IAEA/LIMS_share/blob/main/InstallGuideProduction/SLE-12-SP5/SENAITE-SLES-VM.org)
