@@ -1,0 +1,99 @@
+#+TITLE: SENAITE Update Buildout Documentation
+#+AUTHOR: NiallMurphy-IAEA
+#+DATE: 2023-03-16 
+#+SETUPFILE: theme-readtheorg.setup
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS: [a4paper,11pt]
+#+LATEX_HEADER: \usepackage[left=2cm, right=1.5cm, top=2cm, bottom=1cm]{geometry}
+#+LATEX_HEADER: \usepackage[parfill]{parskip}
+
+** Abstract
+
+   This document describes the steps to update buildout for [[https://github.com/senaite/senaite.core][SENAITE LIMS]] on a Suse Linux
+   Enterprise Server 12.
+   The update will be done over the terminal, so there is no need for a graphical
+   environment, e.g. Gnome or KDE.
+
+** SUSE Linux Enterprise Server VM
+
+   This documentation is targeted for =SUSE Linux Enterprise Server 12 SP5=.
+
+   #+begin_SRC sh
+     cat /etc/os-release
+   #+end_SRC
+
+   Output:
+   : NAME="SLES"
+   : VERSION="12-SP5"
+   : VERSION_ID="12.5"
+   : PRETTY_NAME="SUSE Linux Enterprise Server 12 SP5"
+   : ID="sles"
+   : ANSI_COLOR="0;32"
+   : CPE_NAME="cpe:/o:suse:sles:12:sp5"
+   
+   ** Before we update. 
+
+   Before updating your Senaite lims ensure to create a backup of all files. 
+   
+      
+   ** Access your server
+   Provide details of PuTTY
+   
+** Review and stop all services.  
+  Access root user. If you have sudo from the account you are using then use sudo to access root. 
+  #+begin_SRC sh
+    sudo su - 
+  #+end_SRC
+  Output:
+   : 
+  Check the status of all services. 
+  #+begin_SRC sh
+    supervisorctl status all
+  #+end_SRC
+  Stop all services. 
+  #+begin_SRC sh
+    supervisorctl stop all
+  #+end_SRC
+  
+** Copy updated files to the server.
+  
+  Copy your files to the server
+  
+** Update your buildout file. 
+  Update the contents of your buildout file.
+  The source list([sources]) pulls the most up to date source files from github. These files include restrictions for the version of plone to use. The current (16/05/2023) plone versions is 5.2.11. These might need to be updated if the requirements in the source files are updated. To update modify the plone version numbers in the buildout.cfg file. There is two locations where the plone versions are referenced (i.e. https://dist.plone.org/release/5.2.11/versions.cfg and https://dist.plone.org/release/5.2.11/)
+  #+begin_SRC sh
+   cd   /home/senaite/senaitelims/buildout.cfg 
+  #+end_SRC
+  Output:
+   : 
+   
+** Ensure that senaite_daemon has access to all files
+  #+begin_SRC sh
+    chown -R senaite_daemon:senaite /home/senaite/senaitelims
+  #+end_SRC  
+   
+
+** Run buildout
+  #+begin_SRC sh
+    su - senaite
+    cd /home/senaite/senaitelims
+    source /home/senaite/senaitelims/bin/activate
+    buildout -c buildout.cfg
+  #+end_SRC  
+
+** Start all services. 
+  #+begin_SRC sh
+    supervisorctl start all
+  #+end_SRC
+  Wait a few minuts. Check services. 
+  #+begin_SRC sh
+    supervisorctl status all
+  #+end_SRC
+  Make sure to allow time (a few minutes) before attempting to access Senaite. If any services fail then ensure that senaite_daemon has access to the files. 
+  
+  
+  
+
+
+
