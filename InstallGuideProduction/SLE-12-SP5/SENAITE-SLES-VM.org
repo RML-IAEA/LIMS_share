@@ -895,10 +895,10 @@ copied to the respective directories.
 
 ** Important Notes
 
-   Initially no SENAITE site has been added in the ZOPE application server.
+   Initially no SENAITE site has been added to the ZOPE application server.
 
    This means that opening the server URL throws an error in the browser,
-   because NGINX expects the path ~senaite~ in the rewrite rule.
+   because NGINX expects the path ~senaite~ to be included in the rewrite rule.
 
    Therfore, one of the configured SENAITE instances has to be opened directly,
    e.g. directly with an SSH tunnel *, or the ~senaite~ path has to be temporarily
