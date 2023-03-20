@@ -121,7 +121,7 @@ modify your develop-compose.yml so that Senaite starts in foreground mode. You n
 
   #+end_src
 To determine if you have successfully launched Senaite in foreground mode, navigate to http://127.0.0.1:8080/senaite/@@overview-controlpanel. The botton of the page will state that 'you are running "debug mode"'. See; 
-[[https://github.com/LimsIAEA/LIMS_share/blob/main/docker/Screenshots/DebugMode.PNG]]
+[[https://github.com/LimsIAEA/LIMS_share/blob/main/Docker/Screenshots/DebugMode.PNG]]
 
 The reload feature is accessed from http://127.0.0.1:8080//@@reload. 
 
