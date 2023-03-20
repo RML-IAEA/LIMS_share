@@ -1,8 +1,7 @@
 #+TITLE: SENAITE Docker Guide
-#+AUTHOR: RIDING BYTES GmbH edited by Niall Murphy
-#+EMAIL: rb@ridingbytes.com
-#+DATE: 2022-06-06
-#+MODIFIED: Niall Murphy (IAEA)
+#+AUTHOR: Niall Murphy
+#+EMAIL: n.murphy@iaea.org
+#+DATE: 2023-03-20
 #+SETUPFILE: https://fniessen.github.io/org-html-themes/org/theme-readtheorg.setup
 #+LATEX_CLASS: article
 #+LATEX_CLASS_OPTIONS: [a4paper,11pt]
@@ -11,119 +10,35 @@
 #+LATEX_HEADER: \setlength{\parindent}{0pt}
 
 * Synopsis
-You can downlaod all files of the LIMS_share github [[https://github.com/RML-IAEA/LIMS_share/archive/refs/heads/main.zip][here]].
+You can develop Senaite LIMS using Visual Studio Code and a Docker Container of Senaite LIMS. To create a Docker container of Senaite LIMS see the [[https://github.com/RML-IAEA/LIMS_share/blob/fab9f4f5a527c26a2c0ecbe1883f2accd27d4eca/InstallGuideProduction/SLE-12-SP5/SENAITE-SLES-VM.org][guide]].Download and install Visual Studio Code form https://code.visualstudio.com/download. 
 
-This directory contains a Docker development configuration (~develop-compose.yml~) and a Docker Cluster setup configuration (~docker-compose.yml~) for SENAITE LIMS. The Docker development configuration(~develop-compose.yml~) and Docker Cluster setup configuration (~docker-compose.yml~) are independent of one another (i.e. only one is required to setup Senaite).  The Docker development (~develop-compose.yml~) configuration reduces the number of SENAITE instance to one which saves times when reloading Senaite during development. The Cluster setup configuration mimics the system that should be setup for your production environment. It is advised not to run your production (or live) version of Senaite from a Docker container and instead install Docker on a server (e.g. Debian, Ubuntu, SUSE, etc.).
-
-The Cluster setup starts the following services:
-+ NGINX web server, serving HTTPS on port 8000
-+ HAProxy load balancer, running on port 8888
-+ 2 SENAITE instances, running on port 8081 and 8082
-+ 1 ZEO Database Server
-
-For Windows Users the database can be stored locally (i.e. on the windows system) using a volume bind. See the volume listing in the develop-compose and docker-compose.yml files. The text below is a snippet from the file.  Update the path 'C:\DockerLimsEnvFiles\senaite\data' to a location where you would like to store your Senaite data. Ensure to create the data folder on your Windows machine. 
-#+begin_src sh
-volumes:
-  senaite_vol:  
-    driver: local
-    driver_opts:
-      type: 'none'
-      o: 'bind'
-      device: 'C:\DockerLimsEnvFiles\senaite\data'
-#+end_src
-
-* SENAITE Docker Versions
-
-The SENAITE Docker image used in this setup is version ~2.x~ from here:
-https://hub.docker.com/r/senaite/senaite/tags
-
-This image is automatically built from the official ~senaite.core~ GitHub repository:
-https://github.com/senaite/senaite.core/actions/workflows/docker.yml
-
+To get started (for Windows):
+1. In Docker, ensure that in Docker WSL 2 back-end is enabled. Launch the Docker appicaiton and go to settings. Ensure the box is checked that enables "Use the WSL 2 based engine". 
+[[https://github.com/RML-IAEA/LIMS_share/blob/main/Docker/Screenshots/usewsl2.png]]
+2. In Docker, start your Senaite contianer by going to containers, finding your senaite container (e.g. senaite2x) and clicking the play button:
+[[https://github.com/RML-IAEA/LIMS_share/blob/main/Docker/Screenshots/dockerinstance.png]]
+3. Launch Visual Studio Code and select "Remote Explorer":
+[[https://github.com/RML-IAEA/LIMS_share/blob/main/Docker/Screenshots/remoteexplorer.png]]
+4. Select "Attach to Container" icon:
+[[https://github.com/RML-IAEA/LIMS_share/blob/main/Docker/Screenshots/senaitecontainer.png]]
+5. After you attach, the container you attach to is shown in the botton left corner of your Visual Studio Code interface:
+[[https://github.com/RML-IAEA/LIMS_share/blob/main/Docker/Screenshots/senaitecontainer2.png]]
+6. For the Visual Studio Code instance that is connected your container go to File --> Open Folder. 
+7. The folder path is: 
+	#+begin_src sh
+	  /home/senaite/senaitelims/
+	#+end_src
+	
 NOTE ☝: This Docker image contains the latest code and should not be used for
-        production environments!
+        production environments! 
+NOTE ☝: The directories of the Docker image might be different to the directories in your production 
+	environments!
 
+It is aso helpfull to launch your Senaite Docker image in foreground mode. This will allow you to quicky reload your Senaite environment after you make changes to code. 
 
-* To download or update to the latest SENAITE 2.x image:
-In PowerShell or Command Prompt, run;
-  #+begin_src sh
-  docker pull senaite/senaite:2.x
-  #+end_src
+A guide on how to create a Senaite Image with reloading functionality is avaiable [[https://github.com/RML-IAEA/LIMS_share/blob/main/Docker/Guides/BuildSenaiteContainerDockerGuide.org
+][here]].
 
-* Start a Cluster instance using Cluster setup configuration
-In Powershell or Command Prompt, run;
-+ Change your directory to the path where the ~docker-compose.yml~ is located, example:
-  #+begin_src sh
-  cd C:\Users\nael-lab\Documents\GitHub\iaea.lims\docker
-  #+end_src
-
-NOTE ☝: Your path will be diffrent. Update the path to the folder where you have placed your docker-compose.yml file!
-
-+ Start the instance 
-  #+begin_src sh
-  docker-compose -f docker-compose.yml up
-  #+end_src
-
-Once complete, access Senaite via your browser at http://127.0.0.1:8080
-
-* Start a development instance using development configuration
-In Powershell or Command Prompt, run;
-+ Change your directory to the path where the ~develop-compose.yml~ is located, example:
-  #+begin_src sh
-  cd C:\Users\nael-lab\Documents\GitHub\iaea.lims\docker
-  #+end_src
-
-NOTE ☝: Your path will be different. Update the path to the folder where you have placed your develop-compose.yml file!
-
-+ Start the instance 
-  #+begin_src sh
-  docker-compose -f develop-compose.yml up
-  #+end_src
-
-Once complete, access Senaite via your browser at http://127.0.0.1:8080
-
-* Start the development instance in foreground mode:
-If you would like to get started with developing in Senaite and need a way to reload your code changes without restarting Docker you can use @@reload. To do so, 
-modify your develop-compose.yml so that Senaite starts in foreground mode. You need to include the 'fg' command as shown;
-
-  #+begin_src sh
-	version: "3.9"
-
-	services:
-
-	  instance:
-		container_name: instance
-		image: senaite/senaite:2.x
-		restart: "unless-stopped"
-		command: fg
-		ports:
-		  - "8080:8080"
-		deploy:
-		  resources:
-			limits:
-			  memory: 4GB
-		environment:   
-		  ADDONS: "senaite.databox plone.reload"
-		  SOURCES: "senaite.databox=git https://github.com/senaite/senaite.databox.git branch=master"
-		
-		volumes:
-		  # we need to be selective here, because build files with symlinks, e.g. parts/omelette, cause problems.
-		  - senaite_vol:/data/.
-
-
-	volumes:
-	  senaite_vol:
-		driver: local
-		driver_opts:
-		  type: 'none'
-		  o: 'bind'
-		  device: 'C:\DockerLimsEnvFiles\senaite\data'
-
-  #+end_src
-To determine if you have successfully launched Senaite in foreground mode, navigate to http://127.0.0.1:8080/senaite/@@overview-controlpanel. The botton of the page will state that 'you are running "debug mode"'. See; 
-[[https://github.com/LimsIAEA/LIMS_share/blob/main/docker/Screenshots/DebugMode.PNG]]
-
-The reload feature is accessed from http://127.0.0.1:8080//@@reload. 
 
 NOTE ☝: Not all features can be reloaded using this feature and in some situations you might need to restart your container to reload!
 
