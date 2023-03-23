@@ -1,129 +1,84 @@
-#+TITLE: SENAITE Docker Guide
-#+AUTHOR: RIDING BYTES GmbH edited by Niall Murphy
-#+EMAIL: rb@ridingbytes.com
-#+DATE: 2022-06-06
-#+MODIFIED: Niall Murphy (IAEA)
-#+SETUPFILE: https://fniessen.github.io/org-html-themes/org/theme-readtheorg.setup
-#+LATEX_CLASS: article
-#+LATEX_CLASS_OPTIONS: [a4paper,11pt]
-#+LATEX_HEADER: \usepackage[left=2cm, right=1.5cm, top=2cm, bottom=1cm]{geometry}
-#+LATEX_HEADER: \usepackage[parfill]{parskip}
-#+LATEX_HEADER: \setlength{\parindent}{0pt}
+# I 129 Analysis.
+## Introduction
+As part of the first inter-laboratory comparison (ILC) of water samples treated with the Advanced Liquid Processing System (ALPS), I-129 was analysed by High Purity Germanium (HPGe) gamma spectrometry. The chemical composition of the water after the ALPS treatment was unknown. The HPGe was calibrated with an I-129 a traceable standard obtained from X and prepared with a chemical composition the same as the standard. Since the chemical composition of the water after the ALPS treatment was unknown and that the photon emissions of I-129 occur at energies less than 39.578 keV it is required to quantify the degree of attenuation that occurs in the samples as these low energy photons transverse the matrix to the detector. The degree of attenuation in a sample can be calculated and introduced as a correction factor, known as the self-attenuation correction factor, when quantifying the activity of a sample at a given energy. To evaluate self-attenuation the linear attenuation coefficient for the material at the photon energy of interest must be known. This can be experimentally determined or if the contribution by mass percentage of each chemical is known, the linear attenuation coefficient can be calculated with XCOM
+## Method
+I-129 includes low energy photon emissions, table x, with energies that are less than the resolution of most HPGe detector configurations.  Emissions of similar energy were combined to produce an average energy, table x. 
 
-* Synopsis
-You can downlaod all files of the LIMS_share github [[https://github.com/RML-IAEA/LIMS_share/archive/refs/heads/main.zip][here]].
-
-This directory contains a Docker development configuration (~develop-compose.yml~) and a Docker Cluster setup configuration (~docker-compose.yml~) for SENAITE LIMS. The Docker development configuration(~develop-compose.yml~) and Docker Cluster setup configuration (~docker-compose.yml~) are independent of one another (i.e. only one is required to setup Senaite).  The Docker development (~develop-compose.yml~) configuration reduces the number of SENAITE instance to one which saves times when reloading Senaite during development. The Cluster setup configuration mimics the system that should be setup for your production environment. It is advised not to run your production (or live) version of Senaite from a Docker container and instead install Docker on a server (e.g. Debian, Ubuntu, SUSE, etc.).
-
-The Cluster setup starts the following services:
-+ NGINX web server, serving HTTPS on port 8000
-+ HAProxy load balancer, running on port 8888
-+ 2 SENAITE instances, running on port 8081 and 8082
-+ 1 ZEO Database Server
-
-For Windows Users the database can be stored locally (i.e. on the windows system) using a volume bind. See the volume listing in the develop-compose and docker-compose.yml files. The text below is a snippet from the file.  Update the path 'C:\DockerLimsEnvFiles\senaite\data' to a location where you would like to store your Senaite data. Ensure to create the data folder on your Windows machine. 
-#+begin_src sh
-volumes:
-  senaite_vol:  
-    driver: local
-    driver_opts:
-      type: 'none'
-      o: 'bind'
-      device: 'C:\DockerLimsEnvFiles\senaite\data'
-#+end_src
-
-* SENAITE Docker Versions
-
-The SENAITE Docker image used in this setup is version ~2.x~ from here:
-https://hub.docker.com/r/senaite/senaite/tags
-
-This image is automatically built from the official ~senaite.core~ GitHub repository:
-https://github.com/senaite/senaite.core/actions/workflows/docker.yml
-
-NOTE ☝: This Docker image contains the latest code and should not be used for
-        production environments!
-
-
-* To download or update to the latest SENAITE 2.x image:
-In PowerShell or Command Prompt, run;
-  #+begin_src sh
-  docker pull senaite/senaite:2.x
-  #+end_src
-
-* Start a Cluster instance using Cluster setup configuration
-In Powershell or Command Prompt, run;
-+ Change your directory to the path where the ~docker-compose.yml~ is located, example:
-  #+begin_src sh
-  cd C:\Users\nael-lab\Documents\GitHub\iaea.lims\docker
-  #+end_src
-
-NOTE ☝: Your path will be diffrent. Update the path to the folder where you have placed your docker-compose.yml file!
-
-+ Start the instance 
-  #+begin_src sh
-  docker-compose -f docker-compose.yml up
-  #+end_src
-
-Once complete, access Senaite via your browser at http://127.0.0.1:8080
-
-* Start a development instance using development configuration
-In Powershell or Command Prompt, run;
-+ Change your directory to the path where the ~develop-compose.yml~ is located, example:
-  #+begin_src sh
-  cd C:\Users\nael-lab\Documents\GitHub\iaea.lims\docker
-  #+end_src
-
-NOTE ☝: Your path will be different. Update the path to the folder where you have placed your develop-compose.yml file!
-
-+ Start the instance 
-  #+begin_src sh
-  docker-compose -f develop-compose.yml up
-  #+end_src
-
-Once complete, access Senaite via your browser at http://127.0.0.1:8080
-
-* Start the development instance in foreground mode:
-If you would like to get started with developing in Senaite and need a way to reload your code changes without restarting Docker you can use @@reload. To do so, 
-modify your develop-compose.yml so that Senaite starts in foreground mode. You need to include the 'fg' command as shown;
-
-  #+begin_src sh
-	version: "3.9"
-
-	services:
-
-	  instance:
-		container_name: instance
-		image: senaite/senaite:2.x
-		restart: "unless-stopped"
-		command: fg
-		ports:
-		  - "8080:8080"
-		deploy:
-		  resources:
-			limits:
-			  memory: 4GB
-		environment:   
-		  ADDONS: "senaite.databox plone.reload"
-		  SOURCES: "senaite.databox=git https://github.com/senaite/senaite.databox.git branch=master"
-		
-		volumes:
-		  # we need to be selective here, because build files with symlinks, e.g. parts/omelette, cause problems.
-		  - senaite_vol:/data/.
+```
+Table x
+  Nuclide ; I-129 
+  Element ; Iodine
+  Z ; 53
+  Daughter(s) ; (B-) ; Xe-129 ; 100
+  Q- ; 190.8
+  Possible parent(s) ; (B-) ; Te-129 ; 100 ; (B-) ; Te-129m ; 37
+  Half-life (a) ; 16.1E6 ; 0.7E6
+  Half-life (s) ; 508E12 ; 22E12
+  Decay constant (1/s) ; 1.36E-15 ; 0.06E-15
+  Specific activity (Bq/g) ; 6.37E6 ; 0.28E6
+  Reference ; KRI - 2003
+  Emissions (6 lines) sorted by increasing energy
+  ----------------------------------------------------------------------------------------------------------
+  Energy (keV) ; Ener. unc. (keV) ; Intensity (%) ; Int. unc. (%) ; Type ; Origin ; Lvl. start ; Lvl. end
+  4.5 ;  ; 7.9 ; 0.4 ; XL ; Xe-129 ;  ; 
+  29.459 ;  ; 20.1 ; 0.3 ; XKa2 ; Xe-129 ;  ; 
+  29.779 ;  ; 37.2 ; 0.6 ; XKa1 ; Xe-129 ;  ; 
+  33.6893 ;  ; 10.3 ; 0.4 ; XK'b1 ; Xe-129 ;  ; 
+  34.4877 ;  ; 2.30 ; 0.13 ; XK'b2 ; Xe-129 ;  ; 
+  39.578 ; 0.004 ; 7.42 ; 0.08 ; g ; Xe-129 ; 1 ; 0
+  ==================================================================================================
+```
+``` 
+Table X
+29.619 ; Average of 29.459 and 29.779.
+34.0885 ; Average of 33.562, 33.625, 33.881, 34.415, 34.496 and 34.552.
+```
+### Determination of Linear Attenuation Coefficient for ALPS Sample
+Sample 220217 was used for the experiment. Due to the low activity of the point source of I-129, only the combined lines of 29.459 and 29.779 were used.
+From the evaluation of the linear attenuation, an upper and lower estimate of the linear attenuation coefficient of the matrix was established.
+| Sample ID                     | 220217 LONG |             |            |
+|-------------------------------|-------------|-------------|------------|
+| Geometry                      | 802510      |             |            |
+|                               | v.          | u.          | rel. u.    |
+| Thickness (i.e. height) (cm)  | 1           | 0.02        | 2          |
+|                               |             |             |            |
+|                               | v.          | u.          | rel. u.    |
+| Energy ( keV )                | 29.619      |             |            |
+| N2 Net Counts                 | 1324.36     | 75.48852    | 5.7        |
+| N2 Count Time ( s )           | 165871      |             |            |
+| N2 Count Rate                 | 0.007984277 | 0.000455104 | 5.7        |
+| N1 Net Counts ( air )         | 4047.19     | 110.488287  | 2.73       |
+| N1 Count Time ( s )           | 330160      |             |            |
+| N1 Count Rate                 | 0.012258269 | 0.000334651 | 2.73       |
+|                               |             |             |            |
+| u ( cm<sup>-1</sup> )         | 0.428726482 | 0.063779405 | 14.8764791 |
+|                               |             |             |            |
+| Lower estimate  ( cm<sup>-1</sup> )                 | 0.364947076 |             |            |
+| Upper estimate  ( cm<sup>-1</sup> )                | 0.492505887 |             |            |
+|                               |             |             |            |
+| expected if H2O  ( cm<sup>-1</sup> ) | 0.3827      |             |            |
 
 
-	volumes:
-	  senaite_vol:
-		driver: local
-		driver_opts:
-		  type: 'none'
-		  o: 'bind'
-		  device: 'C:\DockerLimsEnvFiles\senaite\data'
+X HPGe detectors were used for the analysis of I-129. Three different geometries were used, namely 805010, WELLGEO and 500ml Marinelli. 
 
-  #+end_src
-To determine if you have successfully launched Senaite in foreground mode, navigate to http://127.0.0.1:8080/senaite/@@overview-controlpanel. The botton of the page will state that 'you are running "debug mode"'. See; 
-[[https://github.com/LimsIAEA/LIMS_share/blob/main/Docker/Screenshots/DebugMode.PNG]]
+Many programs for the computation of self-attenuation corrections requires that the matrix is defined in terms of the elemental composition. XCOM was used to define a simplified matrix composition which when used produced a linear attenuation coefficients that matched the experimentally determined linear attenuation coefficients. An upper and lower simplified matrix was determined. The simplified matrix composition upper estimate (0.492505887cm<sup>-1</sup> @ 29.619 keV) is composed of;
+  
+| Element | Fraction    |
+|---------|-------------|
+| H2O     | 0.996450643 |
+| Pb      | 0.003549357 |
+  
+The simplified matrix composition lower estimate (0.364947076 cm<sup>-1</sup> @ 29.619 keV) is composed of;
+| Element | Fraction |
+|---------|----------|
+| H2O     | 0.77       |
+| C       | 0.13       |
 
-The reload feature is accessed from http://127.0.0.1:8080//@@reload. 
+NOTE ☝: Longer count times or stronger point sources will increase the net counts and reduce the uncertainty associated with the evaluation of the linear attenuation coefficient. 
 
-NOTE ☝: Not all features can be reloaded using this feature and in some situations you might need to restart your container to reload!
+For EFFTRAN and LABSOCS the upper and lower estimates of the matrix composition was used to calculate the self attenuation correction factor. For GESPECOR both the 
+
+
+
+
 
